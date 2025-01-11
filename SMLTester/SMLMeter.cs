@@ -245,7 +245,11 @@ public class SMLMeter
             connection.Close();
         }
 
-        connection = new SerialPort(this.serialPort, 9600, Parity.Even, 7, StopBits.One);
+        connection = new SerialPort(this.serialPort); //, 9600, Parity.Even, 7, StopBits.One);
+        connection.Parity = Parity.None;
+        connection.StopBits = StopBits.One;
+        connection.DataBits = 8;
+        connection.Handshake = Handshake.None;
         connection.Open();
         connection.ReadTimeout = 100;
     }
