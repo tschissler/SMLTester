@@ -8,7 +8,7 @@ public class Program
 
     static void Main()
     {
-        SerialPort mySerialPort = new SerialPort("COM3");
+        SerialPort mySerialPort = new SerialPort("/dev/ttyUSB0");
 
         mySerialPort.BaudRate = 9600;
         mySerialPort.Parity = Parity.None;
@@ -35,7 +35,12 @@ public class Program
         byte[] buffer = new byte[bytesToRead];
         sp.Read(buffer, 0, bytesToRead);
         globalBuffer.AddRange(buffer);
-        Console.WriteLine("Data Received:");
+        Console.Write("Data Received: ");
+        foreach (byte b in buffer)
+        {
+            Console.Write(b.ToString("X2") + " ");
+        }
+        Console.WriteLine();
     }
 
     public class SmlParser
