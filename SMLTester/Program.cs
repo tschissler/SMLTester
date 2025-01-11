@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.IO.Ports;
 
@@ -8,6 +9,34 @@ public class Program
 
     static void Main()
     {
+        SMLMeter smartMeter = new SMLMeter("/dev/ttyUSB0");
+        Console.WriteLine("Connected to Meter " + smartMeter.MeterID);
+
+        Console.WriteLine("Asking for programming mode...");
+        smartMeter.SetMode(true);
+        Console.WriteLine("Sending password");
+        if (smartMeter.Login())
+        {
+            Console.WriteLine("Login successfull");
+        }
+        else
+        {
+            Console.WriteLine("Smart Meter did not accept password.");
+        }
+
+        while (true)
+        {
+            Console.Clear();
+
+            Console.WriteLine("Voltage  : " + smartMeter.GetVoltage() + " V");
+            Console.WriteLine("Frequency: " + smartMeter.GetFrequency() + " Hz");
+            Console.WriteLine("Current  : " + smartMeter.GetCurrent() + " A");
+            Console.WriteLine("Power    : " + smartMeter.GetPower() + " W");
+
+            System.Threading.Thread.Sleep(1000);
+        }
+
+        smartMeter.Logout();
         SerialPort mySerialPort = new SerialPort("/dev/ttyUSB0");
 
         mySerialPort.BaudRate = 9600;
