@@ -42,7 +42,7 @@ public class Program
         //{
         //    Console.Write(b.ToString("X2") + " ");
         //}
-        Console.WriteLine();
+        //Console.WriteLine();
 
         // Extrahiere Datenpakete
         var data = SMLParser.Parse(globalBuffer);
