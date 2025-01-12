@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SMLTester;
+using System;
 using System.Diagnostics.Metrics;
 using System.IO;
 using System.IO.Ports;
@@ -44,11 +45,10 @@ public class Program
         Console.WriteLine();
 
         // Extrahiere Datenpakete
-        byte[] packet = SMLParser.p(globalBuffer);
-        if (packet != null)
+        var data = SMLParser.Parse(globalBuffer);
+        if (data != null)
         {
-            var result = SMLParser.AnalyzePacket(packet);
-            Console.WriteLine($"Tarif 1: {result.Value.Item1} -- Tarif 2: {result.Value.Item2} -- Leistung: {result.Value.Item3}");
+            Console.WriteLine($"Tarif 1: {data.Tarif1} -- Tarif 2: {data.Tarif2} -- Leistung: {data.Power}");
         }
     }
 }
