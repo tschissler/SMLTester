@@ -9,34 +9,6 @@ public class Program
 
     static void Main()
     {
-        // SMLMeter smartMeter = new SMLMeter("/dev/ttyUSB0");
-        // Console.WriteLine("Connected to Meter " + smartMeter.MeterID);
-
-        // Console.WriteLine("Asking for programming mode...");
-        // smartMeter.SetMode(true);
-        // Console.WriteLine("Sending password");
-        // if (smartMeter.Login())
-        // {
-        //     Console.WriteLine("Login successfull");
-        // }
-        // else
-        // {
-        //     Console.WriteLine("Smart Meter did not accept password.");
-        // }
-
-        // while (true)
-        // {
-        //     Console.Clear();
-
-        //     Console.WriteLine("Voltage  : " + smartMeter.GetVoltage() + " V");
-        //     Console.WriteLine("Frequency: " + smartMeter.GetFrequency() + " Hz");
-        //     Console.WriteLine("Current  : " + smartMeter.GetCurrent() + " A");
-        //     Console.WriteLine("Power    : " + smartMeter.GetPower() + " W");
-
-        //     System.Threading.Thread.Sleep(1000);
-        // }
-
-        // smartMeter.Logout();
         SerialPort mySerialPort = new SerialPort("/dev/ttyUSB0");
 
         mySerialPort.BaudRate = 9600;
@@ -70,45 +42,13 @@ public class Program
             Console.Write(b.ToString("X2") + " ");
         }
         Console.WriteLine();
-    }
 
-    public class SmlParser
-    {
-        private readonly byte[] StartSequence = new byte[] { 0x1B, 0x1B, 0x1B, 0x1B, 0x01, 0x01, 0x01, 0x01 };
-        private readonly byte[] EndSequence = new byte[] { 0x1B, 0x1B, 0x1B, 0x1B, 0x1A };
-
-        public List<byte[]> Parse(byte[] smlData)
+        // Extrahiere Datenpakete
+        byte[] packet = SMLParser.p(globalBuffer);
+        if (packet != null)
         {
-            List<byte[]> messages = new List<byte[]>();
-            int startIndex = 0;
-
-            while ((startIndex = FindSequence(smlData, StartSequence, startIndex)) != -1)
-            {
-                int endIndex = FindSequence(smlData, EndSequence, startIndex);
-                if (endIndex == -1) break;
-
-                int messageLength = endIndex - startIndex + EndSequence.Length;
-                byte[] message = new byte[messageLength];
-                Array.Copy(smlData, startIndex, message, 0, messageLength);
-                messages.Add(message);
-
-                startIndex = endIndex + EndSequence.Length;
-            }
-
-            return messages;
-        }
-
-        private int FindSequence(byte[] source, byte[] sequence, int start)
-        {
-            for (int i = start; i < source.Length - sequence.Length + 1; i++)
-            {
-                if (source.Skip(i).Take(sequence.Length).SequenceEqual(sequence))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            var result = SMLParser.AnalyzePacket(packet);
+            Console.WriteLine($"Tarif 1: {result.Value.Item1} -- Tarif 2: {result.Value.Item2} -- Leistung: {result.Value.Item3}");
         }
     }
 }
