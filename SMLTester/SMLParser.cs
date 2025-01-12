@@ -56,7 +56,7 @@ namespace SMLTester
                     var tarif2 = SMLElementToInteger(tarif2Element);
                     var Leistung = SMLElementToInteger(LeistungsElement);
 
-                    return new SMLData((decimal)tarif1 / 10000, (decimal)tarif2 / 10000, (decimal)Leistung / 10000);
+                    return new SMLData((decimal)tarif1 / 10000, (decimal)tarif2 / 10000, (decimal)Leistung);
 
                 }
                 catch (Exception ex)

@@ -37,11 +37,11 @@ public class Program
         byte[] buffer = new byte[bytesToRead];
         sp.Read(buffer, 0, bytesToRead);
         globalBuffer.AddRange(buffer);
-        Console.Write("Data Received: ");
-        foreach (byte b in buffer)
-        {
-            Console.Write(b.ToString("X2") + " ");
-        }
+        //Console.Write("Data Received: ");
+        //foreach (byte b in buffer)
+        //{
+        //    Console.Write(b.ToString("X2") + " ");
+        //}
         Console.WriteLine();
 
         // Extrahiere Datenpakete

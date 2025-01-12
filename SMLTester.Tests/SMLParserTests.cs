@@ -111,7 +111,7 @@ namespace SMLTester.Tests
 
             Assert.AreEqual(3301.3059m, actual.Tarif1);
             Assert.AreEqual(427.0174m, actual.Tarif2);
-            Assert.AreEqual(0.1002m, actual.Power);
+            Assert.AreEqual(1002m, actual.Power);
         }
     }
 }
