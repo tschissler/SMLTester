@@ -177,5 +177,28 @@ namespace SMLTester.Tests
             Assert.AreEqual(0, result.Count); // No package should be returned
             CollectionAssert.AreEqual(expectedRemainingData, data); // Data should remain unchanged
         }
+
+        [TestMethod]
+        public void ExtractPackage_IncompletePackageWithoutFullStartsequence_KeepsData()
+        {
+            // Arrange
+            var data = new List<byte>
+             {
+                 0xAA, 0xBB, 0xCC, 0xDD,
+                 0x1B, 0x1B // Incomplete start sequence
+             };
+                    var expectedRemainingData = new List<byte>
+             {
+                 0xAA, 0xBB, 0xCC, 0xDD,
+                 0x1B, 0x1B // Incomplete start sequence
+             };
+
+            // Act
+            var result = SMLParser.ExtractPackage(data);
+
+            // Assert
+            Assert.AreEqual(0, result.Count); // No package should be returned
+            CollectionAssert.AreEqual(expectedRemainingData, data); // Data should remain unchanged
+        }
     }
 }

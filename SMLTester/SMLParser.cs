@@ -108,12 +108,6 @@ namespace SMLTester
                 }
             }
 
-            if (startIndex == -1)
-            {
-                data.Clear(); // No start sequence found, clear the data
-                return new List<byte>();
-            }
-
             // Find the end sequence
             for (int i = startIndex; i <= data.Count - endSequencePrefix.Count - 3; i++)
             {
