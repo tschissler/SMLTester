@@ -1,4 +1,4 @@
-# ISKRA B1T SML Parser
+# ISKRA MT631 SML Parser
 
 This is a project that demonstrates how to read SML (Smart Meter Language) data from an a ISKRA B1T digital meter.
 
