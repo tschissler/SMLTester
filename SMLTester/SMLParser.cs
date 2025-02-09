@@ -75,11 +75,39 @@ namespace SMLTester
                 Array.Reverse(tarif1Array);
             }
 
-            if (byteData.data[0] >> 4 == 5)
+            int type = byteData.data[0] >> 4;
+            int length = byteData.data[0] & 0x0F;
+
+            if (type == 5) // Signed Integers
             {
-                return BitConverter.ToInt16(tarif1Array, 0);
+                switch (length)
+                {
+                    case 2:
+                        return (sbyte)tarif1Array[0];
+                    case 3:
+                        return BitConverter.ToInt16(tarif1Array, 0);
+                    case 5:
+                        return BitConverter.ToInt32(tarif1Array, 0);
+                    default:
+                        throw new Exception($"Error while parsing integer, found length {length} but only 2, 3 and 5 are allowed");
+                }
             }
-            return BitConverter.ToInt32(tarif1Array, 0);
+            else if (type == 6) // Unsigned Integers
+            {
+                switch (length)
+                {
+                    case 2:
+                        return tarif1Array[0];
+                    case 3:
+                        return BitConverter.ToUInt16(tarif1Array, 0);
+                    case 5:
+                        return (int)BitConverter.ToUInt32(tarif1Array, 0);
+                    default:
+                        throw new Exception($"Error while parsing unsigned integer, found length {length} but only 2, 3 and 5 are allowed");
+                }
+            }
+            throw new Exception($"Error while parsing integer, found type {type} but only 5 (signed) and 6 (unsigned) are allowed");
+
         }
 
         public static List<byte> ExtractPackage(List<byte> data)
