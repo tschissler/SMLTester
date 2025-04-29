@@ -10,7 +10,8 @@ public class Program
 
     static void Main()
     {
-        SerialPort mySerialPort = new SerialPort("/dev/ttyUSB0");
+        //SerialPort mySerialPort = new SerialPort("/dev/ttyUSB0");
+        SerialPort mySerialPort = new SerialPort("com10");
 
         mySerialPort.BaudRate = 9600;
         mySerialPort.Parity = Parity.None;
@@ -37,19 +38,19 @@ public class Program
         byte[] buffer = new byte[bytesToRead];
         sp.Read(buffer, 0, bytesToRead);
         globalBuffer.AddRange(buffer);
-        //Console.Write("Data Received: ");
-        //foreach (byte b in buffer)
-        //{
-        //    Console.Write(b.ToString("X2") + " ");
-        //}
-        //Console.WriteLine();
+        Console.Write("Data Received: ");
+        foreach (byte b in buffer)
+        {
+            Console.Write(b.ToString("X2") + " ");
+        }
+        Console.WriteLine();
 
         // Extrahiere Datenpakete
-        var data = SMLParser.Parse(globalBuffer);
-        if (data != null)
-        {
-            Console.WriteLine($"Tarif 1: {data.Tarif1} -- Tarif 2: {data.Tarif2} -- Leistung: {data.Power}");
-        }
+        //var data = SMLParser.Parse(globalBuffer);
+        //if (data != null)
+        //{
+        //    Console.WriteLine($"Tarif 1: {data.Tarif1} -- Tarif 2: {data.Tarif2} -- Leistung: {data.Power}");
+        //}
     }
 }
 
