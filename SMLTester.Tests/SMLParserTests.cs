@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Shouldly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -109,9 +110,10 @@ namespace SMLTester.Tests
 
             var actual = SMLParser.Parse(testData);  
 
-            Assert.AreEqual(3301.3059m, actual.Tarif1);
-            Assert.AreEqual(427.0174m, actual.Tarif2);
-            Assert.AreEqual(1002m, actual.Power);
+            actual.ShouldNotBeNull();
+            actual.ConsumptionEnergyTotal.ShouldBe(3301.3059m);
+            actual.FeedEnergyTotal.ShouldBe(427.0174m);
+            actual.EffectivePower.ShouldBe(1002);
         }
 
         [TestMethod]
@@ -212,10 +214,10 @@ namespace SMLTester.Tests
             };
 
             var actual = SMLParser.Parse(testData);
-
-            Assert.AreEqual(3301.3059m, actual.Tarif1);
-            Assert.AreEqual(427.0174m, actual.Tarif2);
-            Assert.AreEqual(-22, actual.Power);
+            actual.ShouldNotBeNull();
+            actual.ConsumptionEnergyTotal.ShouldBe(3301.3059m);
+            actual.FeedEnergyTotal.ShouldBe(427.0174m);
+            actual.EffectivePower.ShouldBe(-22m);
         }
 
         [TestMethod]
@@ -316,10 +318,10 @@ namespace SMLTester.Tests
             };
 
             var actual = SMLParser.Parse(testData);
-
-            Assert.AreEqual(3301.3059m, actual.Tarif1);
-            Assert.AreEqual(427.0174m, actual.Tarif2);
-            Assert.AreEqual(305419947, actual.Power);
+            actual.ShouldNotBeNull();
+            actual.ConsumptionEnergyTotal.ShouldBe(3301.3059m);
+            actual.FeedEnergyTotal.ShouldBe(427.0174m);
+            actual.EffectivePower.ShouldBe(305419947);
         }
 
         [TestMethod]
@@ -464,10 +466,10 @@ namespace SMLTester.Tests
             };
 
             var actual = SMLParser.Parse(testData);
-
-            Assert.AreEqual(42321.1829m, actual.Tarif1);
-            Assert.AreEqual(44904.61m, actual.Tarif2);
-            Assert.AreEqual(0, actual.Power);
+            actual.ShouldNotBeNull();
+            actual.ConsumptionEnergyTotal.ShouldBe(42321.1829m);
+            actual.FeedEnergyTotal.ShouldBe(44904.61m);
+            actual.EffectivePower.ShouldBe(450);
         }
     }
 }

@@ -45,12 +45,13 @@ public class Program
         }
         Console.WriteLine();
 
-        // Extrahiere Datenpakete
-        //var data = SMLParser.Parse(globalBuffer);
-        //if (data != null)
-        //{
-        //    Console.WriteLine($"Tarif 1: {data.Tarif1} -- Tarif 2: {data.Tarif2} -- Leistung: {data.Power}");
-        //}
+        //Extrahiere Datenpakete
+        var data = SMLParser.Parse(globalBuffer);
+        if (data != null)
+        {
+            Console.WriteLine($"{"Manufacturer",-15} {"Device-ID",-25} {"Consumption1",15} {"Consumption2",15} {"ConsumptionTotal",20} {"Feed1",10} {"Feed2",10} {"FeedTotal",10} {"Power",10}");
+            Console.WriteLine($"{data.ManufacturerId,-15} {data.DeviceId,-25} {data.ConsumptionEnergy1,15} {data.ConsumptionEnergy2,15} {data.ConsumptionEnergyTotal,20} {data.FeedEnergy1,10} {data.FeedEnergy2,10} {data.FeedEnergyTotal,10} {data.EffectivePower,10}");
+        }
     }
 }
 

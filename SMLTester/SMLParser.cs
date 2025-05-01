@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace SMLTester
 {
@@ -70,59 +72,94 @@ namespace SMLTester
             return computed == received;
         }
 
-        public static SMLData Parse(List<byte> data)
+        public static SMLData? Parse(List<byte> data)
         {
             while (data.Count > 0)
             {
                 var package = ExtractPackage(data);
                 if (package.Count == 0)
-                {
                     return null;
-                }
-                var elements = ExtractNodes(package);
+                var smlMessages = ExtractNodes(package);
 
-                if (elements.Count == 0)
-                {
-                    throw new Exception("Error while parsing SML package. No elements could be identified");
-                }
+                if (smlMessages.Count == 0)
+                    throw new Exception("Error while parsing SML package. No SML messages could be identified");
+                if (smlMessages.Count < 2)
+                    throw new Exception("Error while parsing SML package. Expected at least 2 SML messages, but found " + smlMessages.Count);
+                if (smlMessages[1] is not SMLList list)
+                    throw new Exception("Error while parsing SML package. Second message is not a list");
 
-                if (elements.Count < 2)
-                {
-                    throw new Exception("Error while parsing SML package. Expected 2 elements on root level, but found " + elements.Count);
-                }
+                // The whole data package delivers multiple SML messages but we are only interested in the second one
+                var dataSMLMessage = smlMessages[1] as SMLList;
+                if (dataSMLMessage!.elements.Count < 4)
+                    throw new Exception("Error while parsing SML package. SML message with data does not contain enough elements");
+                if (dataSMLMessage.elements[3] is not SMLList)
+                    throw new Exception("Error while parsing SML package. Fourth element SML data message is not a list");
 
-                if (elements[1] is not SMLList list)
+                // That SML message should contain exactly one list element (72)
+                var dataList = dataSMLMessage.elements.Where(i => i is SMLList);
+                if (dataList.Count() != 1)
+                    throw new Exception($"Error while parsing SML package. Expected exactly one list in the SML data message but found {dataList.Count()}");
+                // In that list element we again select all sub-elements that are lists and continue by using the first list we find (77)
+                var subDataList = ((SMLList)((SMLList)dataList.ElementAt(0)).elements.Where(i => i is SMLList).ElementAt(0)).elements;
+                if (subDataList.Count() < 2)
+                    throw new Exception($"Error while parsing SML package. Expected at least two lists in subDataLIst, but found {subDataList.Count()}");
+                // In that list we again search for all list elements and take the second one (77).
+                // This is now the list that finally contains the data objects.
+                // The data objects themselves are again list elements containing an identifier at the first element and the value in the sixth element
+                var valuesList = ((SMLList)subDataList.Where(i => i is SMLList).ElementAt(1)).elements.ToList().Cast<SMLList>();
+                if (valuesList.Count() < 2)
                 {
-                    throw new Exception("Error while parsing SML package. Second element on root level is not a list");
-                }
-
-                var dataRootElement = elements[1] as SMLList;
-                if (dataRootElement.elements.Count < 4)
-                {
-                    throw new Exception("Error while parsing SML package. Second list does not contain enough elements");
-                }
-                if (dataRootElement.elements[3] is not SMLList)
-                {
-                    throw new Exception("Error while parsing SML package. Fourth element on second level is not a list");
-                }
-
-                var dataLevel2Element = dataRootElement.elements[3] as SMLList;
-                if (dataLevel2Element.elements.Count < 2)
-                {
-                    throw new Exception("Error while parsing SML package. Third list does not contain enough elements");
+                    throw new Exception("Error while parsing SML package. Values list does not contain enough elements");
                 }
 
                 try
                 {
-                    var tarif1Element = ((SMLList)((SMLList)((SMLList)dataLevel2Element.elements[1]).elements[4]).elements[2]).elements[5] as SMLElement;
-                    var tarif2Element = ((SMLList)((SMLList)((SMLList)dataLevel2Element.elements[1]).elements[4]).elements[3]).elements[5] as SMLElement;
-                    var LeistungsElement = ((SMLList)((SMLList)((SMLList)dataLevel2Element.elements[1]).elements[4]).elements[4]).elements[5] as SMLElement;
+                    var result = new SMLData();
 
-                    var tarif1 = SMLElementToInteger(tarif1Element);
-                    var tarif2 = SMLElementToInteger(tarif2Element);
-                    var Leistung = SMLElementToInteger(LeistungsElement);
+                    // So far I found 2 different identifiers for the manufacturer ID
+                    var valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x81, 0x81, 0xC7, 0x82, 0x03, 0xFF }));
+                    if (valueElement is not null) result.ManufacturerId = SMLElementToString(((SMLElement)valueElement.elements[5]));
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x60, 0x32, 0x01, 0x01 }));
+                    if (valueElement is not null) result.ManufacturerId = SMLElementToString(((SMLElement)valueElement.elements[5]));
 
-                    return new SMLData((decimal)tarif1 / 10000, (decimal)tarif2 / 10000, (decimal)Leistung);
+                    // So far I found 2 different identifiers for the manufacturer ID
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x00, 0x00, 0x09, 0xFF }));
+                    if (valueElement is not null) result.DeviceId = SMLElementToString(((SMLElement)valueElement.elements[5]));
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x60, 0x01, 0x00, 0xFF }));
+                    if (valueElement is not null) result.DeviceId = SMLElementToString(((SMLElement)valueElement.elements[5]));
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x01, 0x08, 0x00, 0xFF }));
+                    if (valueElement is not null) result.ConsumptionEnergyTotal = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/ 10000m;
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x01, 0x08, 0x01, 0xFF }));
+                    if (valueElement is not null) result.ConsumptionEnergy1 = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/ 10000m;
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x01, 0x08, 0x02, 0xFF }));
+                    if (valueElement is not null) result.ConsumptionEnergy2 = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/10000m;
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x02, 0x08, 0x00, 0xFF }));
+                    if (valueElement is not null) result.FeedEnergyTotal = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/10000m;
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x02, 0x08, 0x01, 0xFF }));
+                    if (valueElement is not null) result.FeedEnergy1 = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/10000m;
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x02, 0x08, 0x02, 0xFF }));
+                    if (valueElement is not null) result.FeedEnergy2 = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/10000m;
+
+                    valueElement = valuesList.FirstOrDefault(i => i.elements[0] is SMLElement && ((SMLElement)i.elements[0]).data.SequenceEqual(new List<Byte> { 0x07, 0x01, 0x00, 0x10, 0x07, 0x00, 0xFF }));
+                    if (valueElement is not null) result.EffectivePower = SMLElementToInteger(((SMLElement)valueElement.elements[5]))/1m;
+
+                    return result;
+
+                    //var tarif1Element = ((SMLList)((SMLList)((SMLList)dataSMLMessage.elements[1]).elements[4]).elements[2]).elements[5] as SMLElement;
+                    //var tarif2Element = ((SMLList)((SMLList)((SMLList)dataSMLMessage.elements[1]).elements[4]).elements[3]).elements[5] as SMLElement;
+                    //var LeistungsElement = ((SMLList)((SMLList)((SMLList)dataSMLMessage.elements[1]).elements[4]).elements[4]).elements[5] as SMLElement;
+
+                    //var tarif1 = SMLElementToInteger(tarif1Element);
+                    //var tarif2 = SMLElementToInteger(tarif2Element);
+                    //var Leistung = SMLElementToInteger(LeistungsElement);
+
+                    //return new SMLData((decimal)tarif1 / 10000, (decimal)tarif2 / 10000, (decimal)Leistung);
 
                 }
                 catch (Exception ex)
@@ -133,7 +170,7 @@ namespace SMLTester
             return null; 
         }
 
-        private static int SMLElementToInteger(SMLElement? byteData)
+        private static int SMLElementToInteger(SMLElement byteData)
         {
             var integerArray = byteData.data.Skip(1).ToArray();
             if (BitConverter.IsLittleEndian)
@@ -178,6 +215,16 @@ namespace SMLTester
             }
             throw new Exception($"Error while parsing integer, found type {type} but only 5 (signed) and 6 (unsigned) are allowed");
 
+        }
+
+        public static string? SMLElementToString(SMLElement element)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in element.data)
+            {
+                sb.Append(b.ToString("X2"));
+            }
+            return sb.ToString();
         }
 
         public static List<byte> ExtractPackage(List<byte> data)
@@ -301,5 +348,28 @@ namespace SMLTester
 
     public record SMLList(List<ISMLNode> elements) : ISMLNode;
 
-    public record SMLData(decimal Tarif1, decimal Tarif2, decimal Power);
+    //public record SMLData(decimal Tarif1, decimal Tarif2, decimal Power);
+
+    public class SMLData
+    {
+        // 81 81 C7 82 03 FF
+        public string? ManufacturerId { get; set; }
+        // 01 00 00 00 09 FF
+        public string? DeviceId { get; set; }
+        // 01 00 01 08 00 FF
+        public decimal? ConsumptionEnergyTotal { get; set; }
+        // 01 00 01 08 01 FF
+        public decimal? ConsumptionEnergy1 { get; set; }
+        // 01 00 01 08 02 FF
+        public decimal? ConsumptionEnergy2 { get; set; }
+        // 01 00 02 08 00 FF
+        public decimal? FeedEnergyTotal { get; set; }
+        // 01 00 02 08 01 FF
+        public decimal? FeedEnergy1 { get; set; }
+        // 01 00 02 08 02 FF
+        public decimal? FeedEnergy2 { get; set; }
+        // 01 00 10 07 00 FF
+        public decimal? EffectivePower { get; set; }
+    }
+
 }
